@@ -8,7 +8,7 @@
 const express = require('express'); // const bodyParser = require('body-parser'); // const path = require('path');
 const fs = require('fs');
 const environmentVars = require('dotenv').config();
-
+const axios = require('axios');
 // Google Cloud
 const speech = require('@google-cloud/speech');
 const speechClient = new speech.SpeechClient(); // Creates a client
@@ -38,13 +38,23 @@ app.use('/', function (req, res, next) {
 
 // =========================== SOCKET.IO ================================ //
 
-io.on('connection', function (client) {
+io.on('connection', async (client) => {
     console.log('Client Connected to server');
     let recognizeStream = null;
+    const session = await axios.post('http://127.0.0.1:5000/create_session',{username: client.id});
+    const session_id = session.data;
+
+    console.log(session_id)
+
+    axios.post('http://127.0.0.1:5000/message',{session_id,message: 'how dare you could cancel my pizza',emotion:'angry'}).then(resp => console.log(resp.data));
 
     client.on('join', function (data) {
         client.emit('messages', 'Socket Connected to Server');
     });
+
+    client.on('disconnect',()=>{
+        axios.post('http://127.0.0.1:5000/delete_session',{username: client.id,session_id}).then(resp => console.log(resp.data))
+    })
 
     client.on('messages', function (data) {
         client.emit('broad', data);
