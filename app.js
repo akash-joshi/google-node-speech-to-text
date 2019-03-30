@@ -44,15 +44,16 @@ io.on('connection', async (client) => {
     const session = await axios.post('http://127.0.0.1:5000/create_session',{username: client.id});
     const session_id = session.data;
 
-    console.log(session_id)
+    //console.log(session_id)
 
-    axios.post('http://127.0.0.1:5000/message',{session_id,message: 'how dare you could cancel my pizza',emotion:'angry'}).then(resp => console.log(resp.data));
+    //axios.post('http://127.0.0.1:5000/message',{session_id,message: 'how dare you could cancel my pizza',emotion:'noanger'}).then(resp => console.log(resp.data));
 
     client.on('join', function (data) {
         client.emit('messages', 'Socket Connected to Server');
     });
 
     client.on('disconnect',()=>{
+        console.log(session_id);
         axios.post('http://127.0.0.1:5000/delete_session',{username: client.id,session_id}).then(resp => console.log(resp.data))
     })
 
@@ -91,7 +92,8 @@ io.on('connection', async (client) => {
                         (data.results[0] && data.results[0].alternatives[0])
                             ? `Transcription: ${data.results[0].alternatives[0].transcript}\n`
                             : `\n\nReached transcription time limit, press Ctrl+C\n`);
-                    client.emit('speechData', data);
+                    client.emit('question', data);
+                    axios.post('http://127.0.0.1:5000/message',{session_id,message: data.results[0].alternatives[0].transcript,emotion:'noanger'}).then(resp => client.emit('answer',resp.data));
                     // console.log('restarted stream serverside');
                 }
             });
